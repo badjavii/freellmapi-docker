@@ -34,23 +34,22 @@ The project targets **Linux, macOS, and Windows**. Cross-platform support and th
 ## Planned architecture
 
 ```text
-OpenCode / Other API Clients
-            |
-            v
-     FreeLLMAPI Gateway
-      (Docker Compose)
-            |
-      +-----+-----+
-      |     |     |
-   NVIDIA OpenRouter Hugging Face ...
+   OpenCode / Other API Clients
+                  |
+          FreeLLMAPI Gateway
+           (Docker Compose)
+                  |
+      +-----------+------------+
+      |           |            |
+   NVIDIA     OpenRouter  Hugging Face ...
 
-Encrypted vault (Git-tracked)
-            |
-     Master password
-            |
-Local decrypted configuration (Git-ignored)
-            |
-     FreeLLMAPI startup
+       Encrypted vault (Git-tracked)
+                  |
+            Master password
+                  |
+   Local decrypted configuration (Git-ignored)
+                  |
+           FreeLLMAPI startup
 ```
 
 The vault password will **not** be committed to Git. Decrypted configuration and runtime data will also stay outside version control.
@@ -82,7 +81,7 @@ freellmapi-docker/
 ### Clone the repository
 
 ```bash
-git clone git@github.com:Badjavii/freellmapi-docker.git
+git clone https://github.com/badjavii/freellmapi-docker.git
 cd freellmapi-docker
 ```
 
