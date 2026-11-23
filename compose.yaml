@@ -6,8 +6,7 @@ services:
     build:
       context: ./tools/vault
     working_dir: /workspace
-    volumes:
-      - ./:/workspace
+    volumes: [ "./:/workspace" ]
     stdin_open: true
     tty: true
     network_mode: none
@@ -31,7 +30,7 @@ services:
       - ./.runtime/data:/app/server/data
       - ./.runtime/providers.json:/app/config/providers.json:ro
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ping').then(r => {if(!r.ok) process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ping').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1));"]
       interval: 15s
       timeout: 5s
       start_period: 40s
@@ -43,6 +42,7 @@ services:
       freellmapi:
         condition: service_healthy
     working_dir: /workspace
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ./:/workspace
     environment:
