@@ -9,6 +9,8 @@ _Portable, self-hosted LLM infrastructure for agentic software development_
 ![Security](https://img.shields.io/badge/Security-Encrypted%20Vault-cba6f7?labelColor=181825&style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-In%20Development-a6e3a1?labelColor=181825&style=for-the-badge)
 
+[Leer este README en español](./docs/es/README.md)
+
 </div>
 
 ## About this project

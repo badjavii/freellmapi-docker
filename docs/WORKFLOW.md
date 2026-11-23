@@ -1,5 +1,7 @@
 # Development and deployment workflow
 
+[Leer esta guía en español](./es/WORKFLOW.md)
+
 FreeLLMAPI Docker is intended to be portable across Linux, macOS, and Windows.
 
 ## Prerequisites
