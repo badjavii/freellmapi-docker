@@ -1,10 +1,12 @@
 $ErrorActionPreference = "Stop"
-Set-Location (Join-Path $PSScriptRoot "..")
-if (-not (Test-Path .runtime/opencode.json) -or -not (Test-Path .runtime/opencode.env)) {
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$configPath = Join-Path $root ".runtime/opencode.json"
+$keyPath = Join-Path $root ".runtime/opencode.env"
+if (-not (Test-Path $configPath) -or -not (Test-Path $keyPath)) {
   throw "OpenCode config missing: run docker compose up --build first."
 }
-$line = Get-Content .runtime/opencode.env -Raw
+$line = Get-Content $keyPath -Raw
 $env:FREELLMAPI_API_KEY = ($line.Trim() -split "=",2)[1]
-$env:OPENCODE_CONFIG_CONTENT = Get-Content .runtime/opencode.json -Raw
+$env:OPENCODE_CONFIG_CONTENT = Get-Content $configPath -Raw
 & opencode @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
