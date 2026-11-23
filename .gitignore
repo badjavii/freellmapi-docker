@@ -1,21 +1,17 @@
-# Variables de entorno privadas
+# Local decrypted runtime (never version plaintext secrets)
+.runtime/
 .env
 .env.*
 !.env.example
-
-# Configuración descifrada y archivos temporales
-.runtime/
 config/providers.json
 
-# Bases de datos
+# Encrypted vault/credentials.enc.json IS intentionally versioned
+
+# Local DBs, caches and temporary files
 *.sqlite
 *.sqlite3
 *.sqlite-journal
 *.db
-
-# Dependencias
 node_modules/
-
-# Sistema operativo
 .DS_Store
 Thumbs.db

@@ -1,7 +1,3 @@
-FROM alpine:3.22
-
-RUN apk add --no-cache age
-
+FROM node:24-alpine
 WORKDIR /workspace
-
-ENTRYPOINT ["age"]
+ENTRYPOINT ["node", "tools/vault/cli.mjs"]
