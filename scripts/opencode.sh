@@ -7,6 +7,7 @@ if [ ! -s .runtime/opencode.json ] || [ ! -s .runtime/opencode.env ]; then
 fi
 FREELLMAPI_API_KEY="$(sed -n 's/^FREELLMAPI_API_KEY=//p' .runtime/opencode.env)"
 export FREELLMAPI_API_KEY
-OPENCODE_CONFIG="$(pwd)/.runtime/opencode.json"
-export OPENCODE_CONFIG
+# OpenCode v2 supports inline config; no second copy is written to ~/.config.
+OPENCODE_CONFIG_CONTENT="$(cat .runtime/opencode.json)"
+export OPENCODE_CONFIG_CONTENT
 exec opencode "$@"
