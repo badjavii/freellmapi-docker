@@ -1,0 +1,52 @@
+name: freellmapi-portable
+
+services:
+  vault:
+    profiles: ["tools"]
+    build:
+      context: ./tools/vault
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    stdin_open: true
+    tty: true
+    network_mode: none
+    entrypoint: ["node", "tools/vault/cli.mjs"]
+
+  freellmapi:
+    build:
+      context: ./upstream
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ./.runtime/app.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      FREEAPI_CONFIG_PATH: /app/config/providers.json
+    ports:
+      - "127.0.0.1:${PORT:-3001}:3001"
+    volumes:
+      - ./.runtime/data:/app/server/data
+      - ./.runtime/providers.json:/app/config/providers.json:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ping').then(r => {if(!r.ok) process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 6
+
+  configure:
+    image: node:24-alpine
+    depends_on:
+      freellmapi:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    environment:
+      FREELLMAPI_INTERNAL_URL: http://freellmapi:3001
+      FREELLMAPI_PUBLIC_URL: http://localhost:${PORT:-3001}
+    command: ["node", "tools/bootstrap/configure.mjs"]
+    restart: "no"

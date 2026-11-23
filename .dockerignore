@@ -1,0 +1,4 @@
+# Only applies to the root context; upstream maintains its own .dockerignore
+.runtime/
+vault/
+.git/
