@@ -13,6 +13,32 @@ FreeLLMAPI Docker is intended to be portable across Linux, macOS, and Windows.
 
 The FreeLLMAPI source is pinned as an upstream Git submodule. Unlock scripts initialize that submodule automatically.
 
+## Clean the cloned vault and set up your own instance
+
+The public repository includes its author's encrypted vault. **You do not need the original password.** To use your own provider keys and master password, stop the stack, clean local credentials and runtime data, and initialize your own vault:
+
+**Linux/macOS:**
+
+```sh
+docker compose down
+./scripts/vault.sh clean
+./scripts/vault.sh init
+./scripts/vault.sh add-key openrouter
+```
+
+**Windows PowerShell:**
+
+```powershell
+docker compose down
+.\scripts\vault.ps1 clean
+.\scripts\vault.ps1 init
+.\scripts\vault.ps1 add-key openrouter
+```
+
+`clean` asks you to type `CLEAN` before deleting the local encrypted vault, `.runtime/` (including SQLite data), and `.env`. Back up anything important first. It leaves Git history and the project code untouched. Then add your other providers, unlock and run `docker compose up -d --build`.
+
+If you want to publish your new encrypted vault, commit it **only to your own fork or repository**, never to the original author's project.
+
 ## First-time vault setup (once)
 
 On Linux/macOS:
@@ -22,7 +48,7 @@ On Linux/macOS:
 ./scripts/vault.sh add-key nvidia
 ./scripts/vault.sh add-key openrouter
 ./scripts/unlock.sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 On Windows PowerShell:
@@ -32,7 +58,7 @@ On Windows PowerShell:
 .\scripts\vault.ps1 add-key nvidia
 .\scripts\vault.ps1 add-key openrouter
 .\scripts\unlock.ps1
-docker compose up --build
+docker compose up -d --build
 ```
 
 Commit **only** `vault/credentials.enc.json` after changing credentials. It is encrypted before writing. The master password and `.runtime/` never enter Git.
@@ -43,7 +69,7 @@ Commit **only** `vault/credentials.enc.json` after changing credentials. It is e
 git clone https://github.com/badjavii/freellmapi-docker.git
 cd freellmapi-docker
 ./scripts/unlock.sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 On Windows, replace `./scripts/unlock.sh` with `.\scripts\unlock.ps1`.
@@ -52,7 +78,14 @@ No dashboard setup is necessary: the administrator and provider keys are provisi
 
 ## Using OpenCode
 
-Wait for `[freellmapi-setup] [OK]` lines in Compose output.
+After detached startup, inspect the Compose initialization logs:
+
+```sh
+docker compose ps -a
+docker compose logs configure
+```
+
+Check for `[freellmapi-setup] [OK]` lines.
 Then run `./scripts/opencode.sh` (Linux/macOS), or `.\scripts\opencode.ps1` (Windows).
 
 The launcher reads the **one generated** `.runtime/opencode.json`, uses the local unified API key, and does not modify OpenCode's global configuration.
@@ -67,7 +100,7 @@ The model catalog is dynamic. Provider keys can be successfully imported but rem
 ./scripts/vault.sh unlock
 ```
 
-Re-run `docker compose up --build` after unlocking an updated vault to apply changes. To avoid resetting the encrypted state, do not delete your vault.
+Re-run `docker compose up -d --build` after unlocking an updated vault to apply changes. To avoid resetting the encrypted state, do not delete your vault.
 
 ## Stopping services
 
@@ -88,11 +121,11 @@ Stop containers **before** locking. Lock removes decrypted configuration and the
 - SQLite history and dashboard-only changes are not transported by Git. This project deliberately provisions configuration from the encrypted vault rather than syncing all of SQLite.
 - The first build downloads FreeLLMAPI source through the submodule and downloads base images and npm dependencies.
 - On Windows use PowerShell and Docker Desktop with Linux containers.
-- `docker compose up --build` must be run from the repository root.
+- `docker compose up -d --build` must be run from the repository root.
 
 ## Troubleshooting an interrupted source checkout
 
-If the initial clone stops after `Cloning into .../upstream`, the FreeLLMAPI source submodule has not finished downloading. Running `docker compose up --build` before this finishes produces a missing `upstream/Dockerfile` error.
+If the initial clone stops after `Cloning into .../upstream`, the FreeLLMAPI source submodule has not finished downloading. Running `docker compose up -d --build` before this finishes produces a missing `upstream/Dockerfile` error.
 
 Retry from the repository root:
 
@@ -100,7 +133,7 @@ Retry from the repository root:
 git submodule update --init --recursive --depth 1 --progress
 test -f upstream/Dockerfile
 ./scripts/unlock.sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 Shallow checkout downloads only the history needed to reach the pinned upstream revision. If the download still fails, inspect network access to GitHub and retry; do not delete the encrypted vault.
