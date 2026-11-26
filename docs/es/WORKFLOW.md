@@ -89,3 +89,18 @@ Detén los contenedores **antes** de bloquear el vault. El comando `lock` elimin
 - La primera compilación obtiene el código fuente de FreeLLMAPI mediante el submódulo y descarga imágenes base y dependencias npm.
 - En Windows utiliza PowerShell y Docker Desktop con contenedores Linux.
 - Ejecuta `docker compose up --build` desde la raíz del repositorio.
+
+## Solución de problemas con una descarga interrumpida
+
+Si la descarga inicial se queda en `Cloning into .../upstream`, todavía no se ha descargado completamente el submódulo de FreeLLMAPI. Ejecutar `docker compose up --build` antes de completar este paso produce el error de archivo `upstream/Dockerfile` inexistente.
+
+Vuelve a intentarlo desde la raíz del repositorio:
+
+```sh
+git submodule update --init --recursive --depth 1 --progress
+test -f upstream/Dockerfile
+./scripts/unlock.sh
+docker compose up --build
+```
+
+La descarga superficial obtiene únicamente el historial necesario para la revisión fijada de FreeLLMAPI. Si vuelve a fallar, comprueba el acceso a GitHub y reintenta la descarga; no elimines el vault cifrado.

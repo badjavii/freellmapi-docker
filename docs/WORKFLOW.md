@@ -89,3 +89,18 @@ Stop containers **before** locking. Lock removes decrypted configuration and the
 - The first build downloads FreeLLMAPI source through the submodule and downloads base images and npm dependencies.
 - On Windows use PowerShell and Docker Desktop with Linux containers.
 - `docker compose up --build` must be run from the repository root.
+
+## Troubleshooting an interrupted source checkout
+
+If the initial clone stops after `Cloning into .../upstream`, the FreeLLMAPI source submodule has not finished downloading. Running `docker compose up --build` before this finishes produces a missing `upstream/Dockerfile` error.
+
+Retry from the repository root:
+
+```sh
+git submodule update --init --recursive --depth 1 --progress
+test -f upstream/Dockerfile
+./scripts/unlock.sh
+docker compose up --build
+```
+
+Shallow checkout downloads only the history needed to reach the pinned upstream revision. If the download still fails, inspect network access to GitHub and retry; do not delete the encrypted vault.
