@@ -109,3 +109,17 @@ export function upsertProvider(config, item) {
 export function publicProviderSummary(config) {
   return config.keys.map(k => ({ platform: k.platform, label: k.label, enabled: k.enabled !== false }));
 }
+
+/**
+ * Remove the tracked encrypted vault and all machine-local runtime state.
+ * Call only after explicit user confirmation and stopping the stack.
+ * The repository, source code and scripts are left untouched.
+ */
+export function cleanLocalVault(root) {
+  if (!root || !fs.existsSync(path.join(root, "compose.yaml"))) {
+    throw new Error("Vault cleanup requires the FreeLLMAPI project root");
+  }
+  fs.rmSync(path.join(root, "vault", "credentials.enc.json"), { force: true });
+  fs.rmSync(path.join(root, ".runtime"), { recursive: true, force: true });
+  fs.rmSync(path.join(root, ".env"), { force: true });
+}
