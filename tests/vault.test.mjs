@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { encryptConfig, decryptConfig, upsertProvider, validateConfig } from "../tools/vault/core.mjs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { encryptConfig, decryptConfig, upsertProvider, validateConfig, cleanLocalVault } from "../tools/vault/core.mjs";
 
 const demo = () => ({
   encryptionKey: "a".repeat(64),
@@ -29,4 +32,33 @@ test("upserts a provider by platform and label", () => {
 });
 test("rejects invalid configuration", () => {
   assert.throws(() => validateConfig({}));
+});
+
+test("clean removes only the encrypted vault and local runtime state", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "freellmapi-clean-"));
+  try {
+    fs.mkdirSync(path.join(root, "vault"));
+    fs.mkdirSync(path.join(root, ".runtime", "data"), { recursive: true });
+    fs.writeFileSync(path.join(root, "compose.yaml"), "services: {}\n");
+    fs.writeFileSync(path.join(root, "README.md"), "keep");
+    fs.writeFileSync(path.join(root, "vault", "credentials.enc.json"), "encrypted sample");
+    fs.writeFileSync(path.join(root, ".runtime", "data", "freeapi.db"), "local sample");
+    fs.writeFileSync(path.join(root, ".env"), "LOCAL=test");
+    cleanLocalVault(root);
+    assert.equal(fs.existsSync(path.join(root, "vault", "credentials.enc.json")), false);
+    assert.equal(fs.existsSync(path.join(root, ".runtime")), false);
+    assert.equal(fs.existsSync(path.join(root, ".env")), false);
+    assert.equal(fs.readFileSync(path.join(root, "README.md"), "utf8"), "keep");
+    assert.doesNotThrow(() => cleanLocalVault(root));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+test("clean refuses to operate outside a project root", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "freellmapi-wrong-root-"));
+  try {
+    assert.throws(() => cleanLocalVault(root), /project root/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

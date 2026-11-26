@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { loadVault, saveVault, upsertProvider, atomicWrite, publicProviderSummary } from "./core.mjs";
+import { loadVault, saveVault, upsertProvider, atomicWrite, publicProviderSummary, cleanLocalVault } from "./core.mjs";
 
 const ROOT = process.cwd();
 const VAULT = path.join(ROOT, "vault", "credentials.enc.json");
@@ -69,7 +69,7 @@ function unlockFiles(config) {
   console.log("[OK] Vault decrypted; runtime files generated inside .runtime/");
   console.log("[OK] " + config.keys.length + " provider credential(s) staged (not yet validated upstream)");
   console.log("[OK] FreeLLMAPI admin and encryption key staged");
-  console.log("Next: docker compose up --build");
+  console.log("Next: docker compose up -d --build");
 }
 
 async function main() {
@@ -111,6 +111,19 @@ async function main() {
     console.log(JSON.stringify(publicProviderSummary(config), null, 2));
     return;
   }
+  if (command === "clean") {
+    console.log("[WARNING] This deletes the encrypted vault AND all local runtime data, including SQLite history.");
+    console.log("[WARNING] Stop the stack with docker compose down and back up anything you need first.");
+    const confirmation = await ask("Type CLEAN to continue: ");
+    if (confirmation !== "CLEAN") {
+      console.log("[INFO] Cleanup cancelled; nothing was deleted.");
+      return;
+    }
+    cleanLocalVault(ROOT);
+    console.log("[OK] Local vault and runtime state cleaned. The repository and Git history are unchanged.");
+    console.log("Next: ./scripts/vault.sh init (or .\\scripts\\vault.ps1 init on Windows).");
+    return;
+  }
   if (command === "lock") {
     for (const name of ["providers.json", "app.env", "opencode.json"]) {
       fs.rmSync(path.join(RUNTIME, name), { force: true });
@@ -120,7 +133,7 @@ async function main() {
     return;
   }
   if (command === "help") {
-    console.log("Vault commands: init | add-key [platform] | unlock | list | lock");
+    console.log("Vault commands: init | add-key [platform] | unlock | list | lock | clean");
     return;
   }
   throw new Error("Unknown command: " + command);

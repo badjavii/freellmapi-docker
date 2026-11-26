@@ -22,7 +22,7 @@ The repository is **public by design**. Provider credentials and the dashboard a
 The intended repeatable workflow on a new machine is:
 
 ```text
-git clone -> unlock vault -> docker compose up -> launch OpenCode
+git clone -> unlock vault -> docker compose up -d -> launch OpenCode
 ```
 
 No manual provider registration or dashboard account creation is required on a fresh installation. Dashboard login remains enabled for administrative access.
@@ -31,7 +31,7 @@ No manual provider registration or dashboard account creation is required on a f
 
 - FreeLLMAPI source pinned using a Git submodule and built with Docker Compose.
 - AES-256-GCM authenticated encryption and scrypt-based password derivation for the vault.
-- Interactive commands to initialize the vault, add/update provider keys, inspect providers and unlock it.
+- Interactive commands to clean or initialize a vault, add/update provider keys, inspect providers and unlock it.
 - Declarative provisioning of provider keys and the first dashboard administrator.
 - Persistent SQLite state stored inside the repository workspace and ignored by Git.
 - Automatic discovery of gateway models and generation of **one** local OpenCode configuration.
@@ -75,9 +75,37 @@ git clone https://github.com/badjavii/freellmapi-docker.git
 cd freellmapi-docker
 ```
 
+### Clean the vault and create your own credentials
+
+If you cloned this public repository to use **your own** providers, you do **not** need the author's master password. Start by cleaning the cloned vault, then create a new one with your own master password.
+
+**Important:** `clean` is destructive **only in your local clone**: it deletes `vault/credentials.enc.json`, `.runtime/` (including any SQLite database, usage history and generated OpenCode configuration), and the local `.env`. It does **not** delete project code, scripts or Git history. Back up your own data if necessary, and **stop Docker Compose before cleaning**. The command asks you to type `CLEAN` to confirm.
+
+**Linux/macOS:**
+
+```bash
+docker compose down
+./scripts/vault.sh clean
+./scripts/vault.sh init
+./scripts/vault.sh add-key openrouter
+```
+
+**Windows PowerShell:**
+
+```powershell
+docker compose down
+.\scripts\vault.ps1 clean
+.\scripts\vault.ps1 init
+.\scripts\vault.ps1 add-key openrouter
+```
+
+The `init` command prompts for your **new master password** and your own dashboard administrator email and password. Run `add-key` again for each provider you use (for example, `nvidia`, `google`, or `huggingface`). Finally, follow [Start on any new machine](#start-on-any-new-machine).
+
+You can commit the **new encrypted** `vault/credentials.enc.json` to **your own fork or repository**. Do not submit your personal credential vault to the original project. Cleaning the working tree does not remove the author's encrypted vault from existing Git history.
+
 ### First-time vault creation
 
-If `vault/credentials.enc.json` does **not** exist yet, create it once and add your provider keys.
+After cleaning the included vault (or in a project without one), create your vault once and add your provider keys.
 
 **Linux and macOS:**
 
@@ -103,17 +131,24 @@ The commands prompt interactively; provider keys and master passwords are not pl
 
 ```bash
 ./scripts/unlock.sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 **Windows PowerShell:**
 
 ```powershell
 .\scripts\unlock.ps1
-docker compose up --build
+docker compose up -d --build
 ```
 
 The unlock script checks out the pinned FreeLLMAPI submodule, prompts for the master password and prepares local runtime files. On startup, FreeLLMAPI imports the declared provider credentials and creates the first dashboard account if the database is new.
+
+With `-d`, Compose runs in the background and returns control of the terminal. Verify the initialization and the generated OpenCode settings with:
+
+```bash
+docker compose ps -a
+docker compose logs configure
+```
 
 Once running, open **http://localhost:3001** to access the dashboard.
 

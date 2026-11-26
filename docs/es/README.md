@@ -22,7 +22,7 @@ El repositorio es **público por diseño**. Las credenciales de los proveedores 
 El flujo reproducible previsto para una computadora nueva es:
 
 ```text
-git clone -> desbloquear vault -> docker compose up -> iniciar OpenCode
+git clone -> desbloquear vault -> docker compose up -d -> iniciar OpenCode
 ```
 
 No es necesario registrar manualmente los proveedores ni crear una cuenta de administrador desde el panel en una instalación nueva. El inicio de sesión del panel se mantiene para las tareas administrativas.
@@ -31,7 +31,7 @@ No es necesario registrar manualmente los proveedores ni crear una cuenta de adm
 
 - Código fuente de FreeLLMAPI fijado mediante un submódulo Git y compilado con Docker Compose.
 - Cifrado autenticado AES-256-GCM y derivación de claves mediante scrypt para el vault.
-- Comandos interactivos para inicializar el vault, agregar o actualizar claves, consultar proveedores y desbloquearlo.
+- Comandos interactivos para limpiar o inicializar el vault, agregar o actualizar claves, consultar proveedores y desbloquearlo.
 - Configuración declarativa de las claves de proveedores y del primer administrador del panel.
 - Estado persistente en SQLite dentro de la carpeta del repositorio, excluido del seguimiento de Git.
 - Descubrimiento automático de modelos disponibles en la pasarela y generación de **una única** configuración local de OpenCode.
@@ -75,9 +75,37 @@ git clone https://github.com/badjavii/freellmapi-docker.git
 cd freellmapi-docker
 ```
 
+### Limpiar el vault y configurar tus propias credenciales
+
+Si clonaste este repositorio público para utilizar **tus propios** proveedores, **no necesitas** la contraseña maestra del autor. Primero limpia el vault incluido en la copia y después inicializa uno nuevo con tu propia contraseña maestra.
+
+**Importante:** `clean` elimina datos **solo de tu copia local**: borra `vault/credentials.enc.json`, `.runtime/` (incluida cualquier base de datos SQLite, el historial de uso y la configuración generada para OpenCode) y el archivo local `.env`. **No elimina** el código, los scripts ni el historial Git. Respalda previamente tus datos si es necesario y **detén Docker Compose antes de limpiar**. El comando solicitará escribir `CLEAN` como confirmación.
+
+**Linux/macOS:**
+
+```bash
+docker compose down
+./scripts/vault.sh clean
+./scripts/vault.sh init
+./scripts/vault.sh add-key openrouter
+```
+
+**Windows PowerShell:**
+
+```powershell
+docker compose down
+.\scripts\vault.ps1 clean
+.\scripts\vault.ps1 init
+.\scripts\vault.ps1 add-key openrouter
+```
+
+El comando `init` solicitará **tu nueva contraseña maestra** y el correo y la contraseña del administrador de tu panel. Repite `add-key` para cada proveedor que necesites (por ejemplo, `nvidia`, `google` o `huggingface`). Finalmente, continúa en [Arranque en una computadora nueva](#arranque-en-una-computadora-nueva).
+
+Puedes guardar el **nuevo** `vault/credentials.enc.json` cifrado mediante un commit **en tu propio fork o repositorio**. No envíes tu vault personal al proyecto original. Limpiar los archivos locales no elimina el vault cifrado del autor del historial de Git.
+
 ### Creación inicial del vault
 
-Si todavía **no existe** `vault/credentials.enc.json`, créalo una sola vez y añade las claves de tus proveedores.
+Después de limpiar el vault incluido (o en un proyecto sin vault), inicializa el tuyo una sola vez y agrega las claves de tus proveedores.
 
 **Linux y macOS:**
 
@@ -103,17 +131,24 @@ Los comandos solicitan los datos de forma interactiva: las API keys y las contra
 
 ```bash
 ./scripts/unlock.sh
-docker compose up --build
+docker compose up -d --build
 ```
 
 **Windows PowerShell:**
 
 ```powershell
 .\scripts\unlock.ps1
-docker compose up --build
+docker compose up -d --build
 ```
 
 El script de desbloqueo obtiene el submódulo de FreeLLMAPI en la revisión fijada, solicita la contraseña maestra y prepara los archivos locales de ejecución. Al arrancar, FreeLLMAPI importa las credenciales declaradas y crea la primera cuenta de administrador si la base de datos es nueva.
+
+Con `-d`, Compose se ejecuta en segundo plano y devuelve el control de la terminal. Comprueba el resultado de la inicialización y la configuración generada de OpenCode:
+
+```bash
+docker compose ps -a
+docker compose logs configure
+```
 
 Con el servicio iniciado, abre **http://localhost:3001** para acceder al panel.
 
